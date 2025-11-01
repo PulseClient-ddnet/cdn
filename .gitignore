@@ -3,3 +3,7 @@ debug
 **/dist
 **/.DS_Store
 **/Cargo.lock
+.store/*
+.ref/*
+!.store/.gitkeep
+!.ref/.gitkeep

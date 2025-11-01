@@ -19,3 +19,24 @@
 //! - Сбор статистики, кто, зачем
 //! - Мб рейтлимит
 //! - Бан лист (:))
+
+pub mod logger;
+pub mod png;
+pub mod skin;
+
+use ohkami::{Ohkami, Route, claw::status};
+
+use crate::app::skin::skin_router;
+async fn health_check() -> status::NoContent {
+    status::NoContent
+}
+
+pub async fn app() {
+    Ohkami::new((
+        "/skin".By(skin_router()),
+        "/uvs".GET(health_check),
+        "/health".GET(health_check),
+    ))
+    .howl("localhost:3000")
+    .await
+}
