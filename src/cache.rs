@@ -1,13 +1,3 @@
-//! Кэш, чтобы постоянно не генерить одну и туже тишку. TTL (время жизни) 15 минут
-//!
-//! Запускаем таску, которая раз в 15 минут коллектит. Юзаем CONDVAR
-//!
-//! Храним не в опере, а на диске или ты богатый? Ничё потерпят 20 мс, не опухнут.
-//!
-//! Папка - .cache
-//!
-//! В коде храним DashMap с <(name,Option<body_color>, Option<feet_color>): Path (absolut)>
-
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -66,7 +56,7 @@ impl CacheStore {
         &self,
         query: &SkinQuery,
     ) -> Result<Option<Bytes>, Error> {
-        match self.store.get(&query) {
+        match self.store.get(query) {
             Some(x) => {
                 if x.value().is_acutal() {
                     info!("Take from cache");
