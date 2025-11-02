@@ -54,21 +54,18 @@ pub async fn try_sync_skins(lock: Arc<LockStore>) -> Result<(), Error> {
             .into_par_iter()
             .flat_map_iter(|v| v.into_iter())
             .fold(
-                || HashMap::new(),
+                HashMap::new,
                 |mut acc: HashMap<String, SkinMeta>, skin: SkinMeta| {
                     acc.entry(skin.name.to_string()).or_insert(skin);
                     acc
                 },
             )
-            .reduce(
-                || HashMap::new(),
-                |mut a, b| {
-                    for (k, v) in b {
-                        a.entry(k).or_insert(v);
-                    }
-                    a
-                },
-            )
+            .reduce(HashMap::new, |mut a, b| {
+                for (k, v) in b {
+                    a.entry(k).or_insert(v);
+                }
+                a
+            })
     })
     .await?;
 

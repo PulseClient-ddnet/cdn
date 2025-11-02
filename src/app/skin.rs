@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{fmt::Display, sync::Arc};
 
 use ohkami::{
     IntoResponse, Ohkami, Query, Route,
@@ -7,9 +7,11 @@ use ohkami::{
     openapi::{self, Schema},
     serde::Deserialize,
 };
+use serde::Serialize;
+use tracing::instrument;
 
 use crate::{
-    app::{AppState, lock::lock_handler, logger::LogRequest, png::Png},
+    app::{AppState, cache::cache_handler, lock::lock_handler, logger::LogRequest, png::Png},
     error::Error,
 };
 
@@ -20,26 +22,40 @@ pub fn skin_router() -> Ohkami {
         openapi::Tag("skin"),
         "/".GET(skin_handler),
         "/store".GET(lock_handler),
+        "/cache".GET(cache_handler),
     ))
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Schema, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Schema, Hash, PartialEq, Eq, Serialize)]
 /// Params for expose Tee
-pub struct SkinQuery<'req> {
-    pub name: &'req str,
+pub struct SkinQuery {
+    pub name: String,
     pub body: Option<u32>,
     pub feet: Option<u32>,
 }
 
+impl Display for SkinQuery {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
+        f.debug_struct("SkinQuery")
+            .field("name", &self.name)
+            .field("body", &self.body)
+            .field("feet", &self.feet)
+            .finish()
+    }
+}
+
 #[inline(always)]
+#[instrument(skip(state))]
 /// Represent GET method to return a builded skin by query
 async fn skin_handler<'a>(
-    Context(state): Context<'a, Arc<AppState<'a>>>,
-    // Context(cache): Context<'a, Cache<'a>>,
-    Query(query): Query<SkinQuery<'a>>,
-) -> Result<impl IntoResponse + 'a, Error> {
-    Ok(Created(Png(match state.cache.get(query).await {
-        Ok(Some(e)) => e,
+    Context(state): Context<'a, Arc<AppState>>,
+    Query(query): Query<SkinQuery>,
+) -> Result<impl IntoResponse, Error> {
+    Ok(Created(Png(match state.cache.get(&query).await {
+        Ok(Some(e)) => e.to_vec(),
         _ => state.lock.get(state.cache.clone(), query).await?,
     })))
 }

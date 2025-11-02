@@ -9,14 +9,13 @@
 //! В коде храним DashMap с <(name,Option<body_color>, Option<feet_color>): Path (absolut)>
 
 use std::{
-    path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, Instant},
 };
 
+use bytes::Bytes;
 use dashmap::DashMap;
-use tokio::fs;
-use tracing::{info, instrument};
+use tracing::info;
 
 pub const FIVE_MINUTES: Duration = Duration::from_secs(900);
 
@@ -25,15 +24,15 @@ use crate::{app::skin::SkinQuery, error::Error};
 pub struct CacheItem {
     /// Then it be placed to cache
     pub timestamp: Instant,
-    /// It is't relative, it absolute path
-    pub path: String,
+    /// `Tee`'s data
+    pub data: Bytes,
 }
 
 impl CacheItem {
-    pub fn new(path_to_skin: String) -> Self {
+    pub fn new(data: Bytes) -> Self {
         Self {
             timestamp: Instant::now(),
-            path: path_to_skin,
+            data,
         }
     }
 
@@ -43,48 +42,35 @@ impl CacheItem {
     }
 }
 #[derive(Debug)]
-pub struct CacheStore<'a> {
-    pub path: PathBuf,
-    pub store: DashMap<SkinQuery<'a>, CacheItem>,
+pub struct CacheStore {
+    pub store: DashMap<SkinQuery, CacheItem>,
 }
 
-impl<'a, 'b: 'a> CacheStore<'a> {
-    pub async fn new(path: impl AsRef<Path>) -> Self {
-        fs::create_dir(path.as_ref()).await.ok();
+impl CacheStore {
+    pub async fn new() -> Self {
         Self {
-            path: path.as_ref().to_path_buf(),
             store: DashMap::default(),
         }
     }
 
     pub async fn save(
         &self,
-        query: SkinQuery<'b>,
-        data: &[u8],
+        query: SkinQuery,
+        data: Bytes,
     ) -> Result<(), Error> {
-        let path = self
-            .path
-            .to_path_buf()
-            .join(query.name)
-            .with_extension("png");
-        fs::write(&path, data).await?;
-        self.store.insert(
-            query,
-            CacheItem::new(path.canonicalize()?.display().to_string()),
-        );
+        self.store.insert(query, CacheItem::new(data));
         Ok(())
     }
 
-    #[instrument(skip(self))]
     pub async fn get(
         &self,
-        query: SkinQuery<'b>,
-    ) -> Result<Option<Vec<u8>>, Error> {
+        query: &SkinQuery,
+    ) -> Result<Option<Bytes>, Error> {
         match self.store.get(&query) {
             Some(x) => {
                 if x.value().is_acutal() {
-                    info!("Take from cache");
-                    Ok(Some(fs::read(&x.value().path).await?))
+                    info!(query=%query, "Take from cache");
+                    Ok(Some(x.value().data.clone()))
                 } else {
                     Ok(None)
                 }
@@ -93,4 +79,4 @@ impl<'a, 'b: 'a> CacheStore<'a> {
         }
     }
 }
-pub type Cache<'a> = Arc<CacheStore<'a>>;
+pub type Cache = Arc<CacheStore>;

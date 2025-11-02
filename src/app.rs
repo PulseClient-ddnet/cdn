@@ -20,6 +20,7 @@
 //! - Мб рейтлимит
 //! - Бан лист (:))
 
+pub mod cache;
 pub mod lock;
 pub mod logger;
 pub mod png;
@@ -48,14 +49,14 @@ async fn doc() -> Html {
     Html(fs::read_to_string(DOC_HTML_PATH).await.expect("wtf"))
 }
 
-pub struct AppState<'a> {
+pub struct AppState {
     pub lock: Lock,
-    pub cache: Cache<'a>,
+    pub cache: Cache,
 }
 
 pub async fn app(
     lock: Lock,
-    cache: Cache<'static>,
+    cache: Cache,
 ) {
     let router = Ohkami::new((
         Context::new(Arc::new(AppState {

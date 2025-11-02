@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use tokio::{fs, time::sleep};
-use tracing::{Level, error, info};
+use tracing::{Level, info};
 
 use crate::{
     app::app,
@@ -41,9 +41,7 @@ async fn main() {
             .await
             .unwrap(),
     );
-    let cache = Arc::new(
-        CacheStore::new(std::env::var("CACHE_PATH").expect("CACHE_PATH must be set")).await,
-    );
+    let cache = Arc::new(CacheStore::new().await);
 
     fs::create_dir("static").await.ok();
 
@@ -75,14 +73,8 @@ async fn main() {
                     .collect();
 
                 for key in keys {
-                    if let Some(cached) = cache.store.get(&key) {
-                        if let Err(e) = fs::remove_file(&cached.path).await {
-                            error!(name=%key.name,body=?key.body, feet=?key.feet,path=?cached.path,"Delete failed: {e}" );
-                        } else {
-                            info!(name=%key.name, body=?key.body, feet=?key.feet, "Item has removed from cache");
-                            cache.store.remove(&key);
-                        }
-                    }
+                    info!(name=%key.name, body=?key.body, feet=?key.feet, "Item has removed from cache");
+                    cache.store.remove(&key);
                 }
                 tracing::info!("Cache cleared");
             }

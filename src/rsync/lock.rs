@@ -177,15 +177,15 @@ impl LockStore {
     }
 
     /// Return [Tee] by [SkinQuery] and cache reuslt to the [Cache]
-    pub async fn get<'a: 'b, 'b>(
+    pub async fn get(
         &self,
-        cache: Cache<'b>,
-        query: SkinQuery<'a>,
+        cache: Cache,
+        query: SkinQuery,
     ) -> Result<Vec<u8>, Error> {
         let uv = fs::read(
             &self
                 .store
-                .get(query.name)
+                .get(&query.name)
                 .ok_or(Error::QueryNameNotFound)?
                 .value()
                 .path,
@@ -213,7 +213,7 @@ impl LockStore {
             },
         )
         .await???;
-        cache.save(query, &tee).await?;
+        cache.save(query.clone(), tee.clone()).await?;
         Ok(tee.to_vec())
     }
 }
