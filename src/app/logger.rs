@@ -3,6 +3,7 @@ use ohkami::{FangAction, Request, Response};
 #[derive(Clone)]
 pub struct LogRequest;
 impl FangAction for LogRequest {
+    #[inline(always)]
     async fn fore<'a>(
         &'a self,
         req: &'a mut Request,

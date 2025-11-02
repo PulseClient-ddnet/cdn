@@ -10,6 +10,8 @@ use tracing::error;
 pub enum Error {
     #[error("I/O error")]
     Io(#[from] io::Error),
+    #[error("Json convertation error")]
+    Json(#[from] serde_json::Error),
     #[error("Fail to join task")]
     TaskJoin(#[from] JoinError),
     #[error("Tee error")]
@@ -63,6 +65,7 @@ impl IntoResponse for Error {
                 error,
             } => todo!(),
             Error::TaskJoin(join_error) => todo!(),
+            Error::Json(error) => todo!(),
         }
     }
 }

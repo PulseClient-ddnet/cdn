@@ -4,22 +4,24 @@ use std::{
 };
 
 use dashmap::DashMap;
+use image::ImageFormat;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use tee_morphosis::tee::{Tee, hsl::ddnet_color_to_hsl, parts::TeePart, skin::TEE_SKIN_LAYOUT};
 use tokio::{
     fs,
     io::{self, AsyncWriteExt},
     sync::Semaphore,
-    task::JoinSet,
+    task::{JoinSet, spawn_blocking},
 };
 use tracing::{error, info, warn};
 
-use crate::{error::Error, rsync::parser::SkinMeta};
+use crate::{app::skin::SkinQuery, cache::Cache, error::Error, rsync::parser::SkinMeta};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LockMeta {
-    /// saved os path
+    /// saved os absolute path
     pub path: String,
     /// Download link
     pub origin: String,
@@ -28,16 +30,18 @@ pub struct LockMeta {
 }
 
 #[derive(Debug)]
-pub struct Lock {
+pub struct LockStore {
     /// Path to store
     pub path: PathBuf,
-    pub inner: Arc<DashMap<String, LockMeta>>,
+    pub store: Arc<DashMap<String, LockMeta>>,
 }
 
-impl Lock {
+pub type Lock = Arc<LockStore>;
+
+impl LockStore {
     /// Save inner
     pub async fn save(&self) -> io::Result<()> {
-        let file = serde_json::to_string_pretty(&*self.inner).unwrap();
+        let file = serde_json::to_string_pretty(&*self.store).unwrap();
         fs::write(&self.path.join("lock.json"), file).await?;
         Ok(())
     }
@@ -54,15 +58,15 @@ impl Lock {
             let inner = serde_json::from_str(&content)?;
 
             Ok(Self {
-                path: path.to_path_buf(),
-                inner: Arc::new(inner),
+                path: path.to_path_buf().canonicalize().unwrap(),
+                store: Arc::new(inner),
             })
         } else {
             let inner = Arc::new(DashMap::new());
             fs::write(&lock_path, serde_json::to_string_pretty(&*inner).unwrap()).await?;
             Ok(Self {
-                path: path.to_path_buf(),
-                inner,
+                path: path.to_path_buf().canonicalize().unwrap(),
+                store: inner,
             })
         }
     }
@@ -76,7 +80,7 @@ impl Lock {
         skins
             .par_iter()
             .filter_map(|skin| {
-                match self.inner.get(&skin.name) {
+                match self.store.get(&skin.name) {
                     Some(lock_meta) if !skin.eq_lock_meta(lock_meta.value()) => {warn!(name=%skin.name, meta_ita=%lock_meta.value().ita, current_ita=%skin.ita, "↗️ Found outdated skin"); Some(skin.clone())}, // Устаревший
                     None => {info!(name=%skin.name, "↖️ Found new skin"); Some(skin.clone())}, // Новый скин
                     _ => None,                  // Совпадает по ita — не трогаем
@@ -98,8 +102,9 @@ impl Lock {
         for skin in updated.iter().cloned() {
             let permit = semaphore.clone().acquire_owned().await.unwrap();
             let client = client.clone();
-            let lock = self.inner.clone();
+            let lock = self.store.clone();
             let save_path = self.path.clone().join(&skin.name).with_extension("png");
+
             join_set.spawn(async move {
                 let result = match client.get(&skin.origin).send().await {
                     Ok(resp) => match resp.bytes().await {
@@ -120,15 +125,17 @@ impl Lock {
                             let existed = lock.insert(
                                 skin.name.clone(),
                                 LockMeta {
-                                    path: save_path.canonicalize().unwrap().display().to_string(),
+                                    path: save_path.canonicalize()?.display().to_string(),
                                     origin: skin.origin.clone(),
                                     ita: skin.ita.clone(),
                                 },
                             );
 
                             match existed {
-                                Some(e) => info!(name=%skin.name, path=%e.path, "🔄 Replaced skin"),
-                                None => info!(name=%skin.name, "🆕 Added new skin"),
+                                Some(e) => {
+                                    info!(name=%skin.name, path=?e.path, "🔄 Replaced skin")
+                                }
+                                None => info!(name=%skin.name, path_to_save=?save_path, "🆕 Added new skin"),
                             }
 
                             Ok(())
@@ -167,5 +174,46 @@ impl Lock {
         }
 
         Ok(())
+    }
+
+    /// Return [Tee] by [SkinQuery] and cache reuslt to the [Cache]
+    pub async fn get<'a: 'b, 'b>(
+        &self,
+        cache: Cache<'b>,
+        query: SkinQuery<'a>,
+    ) -> Result<Vec<u8>, Error> {
+        let uv = fs::read(
+            &self
+                .store
+                .get(query.name)
+                .ok_or(Error::QueryNameNotFound)?
+                .value()
+                .path,
+        )
+        .await
+        .map_err(Error::Io)?;
+        let tee = spawn_blocking(
+            #[inline]
+            move || {
+                Tee::new(uv.into(), ImageFormat::Png).map(|mut tee| {
+                    if let Some(value) = query.body {
+                        tee.apply_hsv_to_parts(
+                            ddnet_color_to_hsl(value),
+                            &[TeePart::Body, TeePart::BodyShadow],
+                        );
+                    }
+                    if let Some(value) = query.feet {
+                        tee.apply_hsv_to_parts(
+                            ddnet_color_to_hsl(value),
+                            &[TeePart::Feet, TeePart::FeetShadow],
+                        );
+                    }
+                    tee.compose_default(TEE_SKIN_LAYOUT)
+                })
+            },
+        )
+        .await???;
+        cache.save(query, &tee).await?;
+        Ok(tee.to_vec())
     }
 }

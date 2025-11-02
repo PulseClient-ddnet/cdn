@@ -24,12 +24,12 @@ use tracing::info;
 use crate::{
     error::Error,
     rsync::{
-        lock::Lock,
+        lock::LockStore,
         parser::{SkinMeta, fetch_skin_list},
     },
 };
 
-pub async fn try_sync_skins(lock: Arc<Lock>) -> Result<(), Error> {
+pub async fn try_sync_skins(lock: Arc<LockStore>) -> Result<(), Error> {
     let client = Client::new();
 
     let urls = vec![
@@ -37,7 +37,6 @@ pub async fn try_sync_skins(lock: Arc<Lock>) -> Result<(), Error> {
         "https://ddnet.org/skins/skin/community/",
     ];
 
-    // Параллельно запускаем fetch_skin_list для всех URL-ов
     let fetches = urls.into_iter().map(|url| {
         let client = client.clone();
         async move {
@@ -94,9 +93,9 @@ mod tests {
 
     use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-    use crate::rsync::{lock::Lock, try_sync_skins};
+    use crate::rsync::{lock::LockStore, try_sync_skins};
 
-    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    #[tokio::test(flavor = "multi_thread", worker_threads = 24)]
     async fn fetch() {
         let env_filter = EnvFilter::try_from_default_env()
             .unwrap_or_else(|_| EnvFilter::new("cdn=trace,ohkami=info"));
@@ -111,7 +110,11 @@ mod tests {
         unsafe {
             env::set_var("STORE_PATH", "./.store");
         }
-        let lock = Arc::new(Lock::read(env::var("STORE_PATH").unwrap()).await.unwrap());
+        let lock = Arc::new(
+            LockStore::read(env::var("STORE_PATH").unwrap())
+                .await
+                .unwrap(),
+        );
         try_sync_skins(lock).await.unwrap();
     }
 }

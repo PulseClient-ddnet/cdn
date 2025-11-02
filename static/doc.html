@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Scalar</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+    </head>
+    <body>
+        <script id="api-reference" type="application/json">
+            {
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DDNET Tee generator",
+    "version": "1"
+  },
+  "servers": [],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health_check",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/skin": {
+      "get": {
+        "operationId": "skin_handler",
+        "tags": [
+          "skin"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "body",
+            "schema": {
+              "type": "integer",
+              "format": "uint32"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "feet",
+            "schema": {
+              "type": "integer",
+              "format": "uint32"
+            },
+            "required": false
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/png"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/skin/store": {
+      "get": {
+        "operationId": "lock_handler",
+        "tags": [
+          "skin"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uvs": {
+      "get": {
+        "operationId": "health_check",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    }
+  }
+}
+
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    </body>
+</html>

@@ -39,22 +39,25 @@ pub async fn fetch_skin_list(
     )
     .unwrap();
 
-    let list = spawn_blocking(move || {
-        re.captures_iter(&text)
-            .par_bridge()
-            .map(|cap| {
-                let name = &cap[1];
-                let modified = &cap[2];
+    let list = spawn_blocking(
+        #[inline]
+        move || {
+            re.captures_iter(&text)
+                .par_bridge()
+                .map(|cap| {
+                    let name = cap[1].replace(" ", "_").replace("%20", "_");
+                    let modified = &cap[2];
 
-                SkinMeta {
-                    origin: format!("{}{}", url, name),
-                    // Collect the character iterator into a String for the name field
-                    name: name.chars().take(name.len() - 4).collect::<String>(),
-                    ita: modified.to_string(),
-                }
-            })
-            .collect::<Vec<SkinMeta>>()
-    })
+                    SkinMeta {
+                        origin: format!("{}{}", url, name),
+                        // Collect the character iterator into a String for the name field
+                        name: name.chars().take(name.len() - 4).collect::<String>(),
+                        ita: modified.to_string(),
+                    }
+                })
+                .collect::<Vec<SkinMeta>>()
+        },
+    )
     .await?;
 
     Ok(list)
