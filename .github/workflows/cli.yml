@@ -11,7 +11,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  BINARY_NAME: change_me
+  BINARY_NAME: cdn
 
 jobs:
   lint:
@@ -46,38 +46,38 @@ jobs:
           # linux x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact_name: change_me
-            asset_name: change_me-linux-amd64
+            artifact_name: cdn
+            asset_name: cdn-linux-amd64
 
           # linux arm
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            artifact_name: change_me
-            asset_name: change_me-linux-arm
+            artifact_name: cdn
+            asset_name: cdn-linux-arm
 
           # windows x64
           - os: windows-latest
             target: x86_64-pc-windows-gnu
-            artifact_name: change_me.exe
-            asset_name: change_me-windows-amd64.exe
+            artifact_name: cdn.exe
+            asset_name: cdn-windows-amd64.exe
 
           # windows arm
           - os: windows-latest
             target: aarch64-pc-windows-msvc
-            artifact_name: change_me.exe
-            asset_name: change_me-windows-arm.exe
+            artifact_name: cdn.exe
+            asset_name: cdn-windows-arm.exe
 
           # macos x64
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact_name: change_me
-            asset_name: change_me-macos-amd64
+            artifact_name: cdn
+            asset_name: cdn-macos-amd64
 
           # macos arm
           - os: macos-latest
             target: aarch64-apple-darwin
-            artifact_name: change_me
-            asset_name: change_me-macos-arm
+            artifact_name: cdn
+            asset_name: cdn-macos-arm
 
     steps:
       - uses: actions/checkout@v4
@@ -144,12 +144,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            change_me-linux-amd64/change_me-linux-amd64
-            change_me-windows-amd64.exe/change_me-windows-amd64.exe
-            change_me-macos-amd64/change_me-macos-amd64
-            change_me-linux-arm/change_me-linux-arm
-            change_me-windows-arm.exe/change_me-windows-arm.exe
-            change_me-macos-arm/change_me-macos-arm
+            cdn-linux-amd64/cdn-linux-amd64
+            cdn-windows-amd64.exe/cdn-windows-amd64.exe
+            cdn-macos-amd64/cdn-macos-amd64
+            cdn-linux-arm/cdn-linux-arm
+            cdn-windows-arm.exe/cdn-windows-arm.exe
+            cdn-macos-arm/cdn-macos-arm
           draft: false
           prerelease: false
           generate_release_notes: true

@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  BINARY_NAME: change_me
+  BINARY_NAME: cdn
 
 jobs:
   lint:

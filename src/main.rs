@@ -19,7 +19,7 @@ fn init_logger(level: Level) {
 
     // Check for RUST_LOG env var, default to INFO if not present
     let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("cdn=trace,ohkami=trace"));
+        .unwrap_or_else(|_| EnvFilter::new("cdn=info,ohkami=trace"));
 
     let fmt_layer = fmt::layer().compact().with_ansi(true).with_target(true);
 
