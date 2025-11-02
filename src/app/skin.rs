@@ -1,10 +1,10 @@
 use std::{fmt::Display, sync::Arc};
 
 use ohkami::{
-    IntoResponse, Ohkami, Query, Route,
-    claw::status::Created,
+    Ohkami, Query, Route,
+    claw::status::OK,
     fang::Context,
-    openapi::{self, Schema},
+    openapi::{self, Schema, SchemaRef, operation},
     serde::Deserialize,
 };
 use serde::Serialize;
@@ -26,15 +26,45 @@ pub fn skin_router() -> Ohkami {
     ))
 }
 
-#[derive(Debug, Clone, Deserialize, Schema, Hash, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Deserialize, Hash, PartialEq, Eq, Serialize)]
 /// Base/Default/Main skin query
 pub struct SkinQuery {
-    /// Replace all whitespaces to `_`
+    /// **note**: Replace all whitespaces to `_`
     pub name: String,
     /// DDNet value
     pub body: Option<u32>,
     /// DDNet value
     pub feet: Option<u32>,
+}
+
+impl Schema for SkinQuery {
+    fn schema() -> impl Into<SchemaRef> {
+        openapi::component(
+            "SkinQuery",
+            openapi::object()
+                .property(
+                    "name",
+                    openapi::string()
+                        .format("a-zA-Z0-9_")
+                        .description("Skin name")
+                        .example("zzz"),
+                )
+                .optional(
+                    "body",
+                    openapi::string()
+                        .description("DDNet value")
+                        .example("32132114")
+                        .nullable(),
+                )
+                .optional(
+                    "feet",
+                    openapi::string()
+                        .description("DDNet value")
+                        .example("32132114")
+                        .nullable(),
+                ),
+        )
+    }
 }
 
 impl Display for SkinQuery {
@@ -51,13 +81,16 @@ impl Display for SkinQuery {
 }
 
 #[inline(always)]
-#[instrument(skip(state))]
+#[instrument(skip_all, level="info", fields(name=%query.name, body=?query.body, feet=?query.feet))]
+#[operation({
+    summary: "Get rendered skin image",
+})]
 /// Represent GET method to return a builded skin by query
-async fn skin_handler<'a>(
-    Context(state): Context<'a, Arc<AppState>>,
+async fn skin_handler(
+    Context(state): Context<'_, Arc<AppState>>,
     Query(query): Query<SkinQuery>,
-) -> Result<impl IntoResponse, Error> {
-    Ok(Created(Png(match state.cache.get(&query).await {
+) -> Result<OK<Png>, Error> {
+    Ok(OK(Png(match state.cache.get(&query).await {
         Ok(Some(e)) => e.to_vec(),
         _ => state.lock.get(state.cache.clone(), query).await?,
     })))

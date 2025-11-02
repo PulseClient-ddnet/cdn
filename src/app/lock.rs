@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use ohkami::{IntoResponse, Json, fang::Context};
+use ohkami::{Json, fang::Context};
 
 use crate::{app::AppState, error::Error};
 
 #[inline(always)]
 /// Represent GET method to return list of skins
-pub async fn lock_handler<'a>(
-    Context(state): Context<'a, Arc<AppState>>
-) -> Result<impl IntoResponse + 'a, Error> {
+pub async fn lock_handler(
+    Context(state): Context<'_, Arc<AppState>>
+) -> Result<Json<Vec<String>>, Error> {
     Ok(Json(
         state
             .lock

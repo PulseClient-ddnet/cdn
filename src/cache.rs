@@ -69,7 +69,7 @@ impl CacheStore {
         match self.store.get(&query) {
             Some(x) => {
                 if x.value().is_acutal() {
-                    info!(query=%query, "Take from cache");
+                    info!("Take from cache");
                     Ok(Some(x.value().data.clone()))
                 } else {
                     Ok(None)

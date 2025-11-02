@@ -1,15 +1,18 @@
 use std::sync::Arc;
 
-use ohkami::{IntoResponse, Json, fang::Context};
+use ohkami::{Json, fang::Context};
 use tracing::debug;
 
-use crate::{app::AppState, error::Error};
+use crate::{
+    app::{AppState, skin::SkinQuery},
+    error::Error,
+};
 
 #[inline(always)]
 /// Represent GET method to return list of skins
-pub async fn cache_handler<'a>(
-    Context(state): Context<'a, Arc<AppState>>
-) -> Result<impl IntoResponse + 'a, Error> {
+pub async fn cache_handler(
+    Context(state): Context<'_, Arc<AppState>>
+) -> Result<Json<Vec<SkinQuery>>, Error> {
     Ok(Json(
         state
             .cache
