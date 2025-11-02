@@ -36,6 +36,10 @@ async fn main() {
     dotenvy::dotenv().ok();
 
     init_logger(Level::INFO);
+    let address = format!(
+        "0.0.0.0:{}",
+        std::env::var("PORT").expect("PORT must be set")
+    );
     let lock = Arc::new(
         LockStore::read(std::env::var("STORE_PATH").expect("STORE_PATH must be set"))
             .await
@@ -81,5 +85,5 @@ async fn main() {
         });
     }
 
-    app(lock, cache).await
+    app(lock, cache, &address).await
 }

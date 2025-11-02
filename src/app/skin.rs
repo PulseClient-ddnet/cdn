@@ -27,8 +27,8 @@ pub fn skin_router() -> Ohkami {
 }
 
 #[derive(Debug, Clone, Deserialize, Schema, Hash, PartialEq, Eq, Serialize)]
-/// Params for expose Tee
 pub struct SkinQuery {
+    /// Replace all whitespaces to `_`
     pub name: String,
     pub body: Option<u32>,
     pub feet: Option<u32>,

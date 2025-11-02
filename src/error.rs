@@ -4,7 +4,7 @@ use ohkami::{IntoResponse, Response};
 use reqwest::header::ToStrError;
 use thiserror::Error;
 use tokio::{io, task::JoinError};
-use tracing::error;
+use tracing::{error, instrument};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -33,39 +33,27 @@ pub enum Error {
 }
 
 impl IntoResponse for Error {
+    #[instrument]
     fn into_response(self) -> Response {
         match self {
-            Error::Io(e) => {
-                error!(error=%e,"I/O error");
-                Response::InternalServerError().with_text("Skin not found")
-            }
-            Error::Tee(e) => {
-                error!(error=%e,"Tee error");
-                Response::InternalServerError().with_text("Fail to render uv")
-            }
+            Error::Io(_) => Response::InternalServerError().with_text("Skin not found"),
+            Error::Tee(_) => Response::InternalServerError().with_text("Fail to render uv"),
             Error::QueryNameNotFound => {
-                error!("Query expected name, but got none");
                 Response::BadRequest().with_text("Query expected name, but got none")
             }
-            Error::Reqwest(e) => {
-                error!(error=%e,"Reqwest error");
-                Response::InternalServerError()
-            }
-            Error::ToStrError(e) => {
-                error!(error=%e,"Reqwest ToStr error");
-                Response::InternalServerError()
-            }
-            Error::SaveFailed {
-                path,
-                name,
-                error,
-            } => todo!(),
+            Error::Reqwest(_) => Response::InternalServerError(),
+            Error::ToStrError(_) => Response::InternalServerError(),
             Error::DownloadFailed {
-                name,
-                error,
+                name: _,
+                error: _,
             } => todo!(),
-            Error::TaskJoin(join_error) => todo!(),
-            Error::Json(error) => todo!(),
+            Error::TaskJoin(_join_error) => Response::InternalServerError(),
+            Error::Json(_error) => Response::InternalServerError(),
+            Error::SaveFailed {
+                path: _,
+                name: _,
+                error: _,
+            } => Response::InternalServerError(),
         }
     }
 }

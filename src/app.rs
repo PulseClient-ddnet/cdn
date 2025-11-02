@@ -57,6 +57,7 @@ pub struct AppState {
 pub async fn app(
     lock: Lock,
     cache: Cache,
+    address: &str,
 ) {
     let router = Ohkami::new((
         Context::new(Arc::new(AppState {
@@ -81,5 +82,5 @@ pub async fn app(
     .expect("wtf");
 
     let router = Ohkami::new(("/doc".GET(doc), "/".By(router)));
-    router.howl("localhost:3000").await;
+    router.howl(address).await;
 }
