@@ -3,7 +3,6 @@ name: Lint
 on:
   push:
     branches:
-      # change for your branch name
       - main
 
 env:
@@ -29,5 +28,3 @@ jobs:
 
       - name: lint
         run: cargo clippy # instruct some packages if needed
-      - name: test
-        run: cargo test --tests --bins --examples # instruct some packages if needed

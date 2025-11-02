@@ -1,7 +1,3 @@
-# Before usage
-# - Change name of output files
-# - Change lint command if needed
-
 name: Release CLI
 
 on:
@@ -31,10 +27,7 @@ jobs:
           cache-on-failure: true
 
       - name: lint
-        run: cargo clippy # instruct some packages if needed
-
-      # - name: test
-      #   run: cargo test --tests --bins --examples # instruct some packages if needed
+        run: cargo clippy
 
   build-and-release:
     name: Build and Release
