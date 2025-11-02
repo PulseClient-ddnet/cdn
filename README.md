@@ -23,9 +23,6 @@ The following API routes are available:
 *   **`GET /skin/cache`**
     *   **Description**: Returns a JSON array of the names of all currently cached (generated) skins.
 
-*   **`GET /uvs`**
-    *   **Description**: Serves a folder containing all UV (unwrap) images. This route acts as a mirror for the UV data.
-
 *   **`GET /health`**
     *   **Description**: Performs a health check and returns a `204 No Content` response if the service is operational.
 

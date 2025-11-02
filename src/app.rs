@@ -43,7 +43,6 @@ pub async fn app(
             cache,
         })),
         "/skin".By(skin_router()),
-        "/uvs".GET(health_check),
         "/health".GET(health_check),
     ));
 
