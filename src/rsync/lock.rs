@@ -197,18 +197,18 @@ impl LockStore {
             move || {
                 Tee::new(uv.into(), ImageFormat::Png).map(|mut tee| {
                     if let Some(value) = query.body {
-                        tee.apply_hsv_to_parts(
+                        tee.apply_hsl_to_parts(
                             ddnet_color_to_hsl(value),
                             &[TeePart::Body, TeePart::BodyShadow],
                         );
                     }
                     if let Some(value) = query.feet {
-                        tee.apply_hsv_to_parts(
+                        tee.apply_hsl_to_parts(
                             ddnet_color_to_hsl(value),
                             &[TeePart::Feet, TeePart::FeetShadow],
                         );
                     }
-                    tee.compose_default(TEE_SKIN_LAYOUT)
+                    tee.compose_png(TEE_SKIN_LAYOUT, tee_morphosis::tee::parts::EyeType::Happy)
                 })
             },
         )
