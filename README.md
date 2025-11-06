@@ -70,11 +70,5 @@ Here are examples of how to interact with the API:
     ```
     GET /doc
     ```
-
-*   **Access the UV images:**
-    ```
-    GET /uvs
-    ```
-
 ## License
 MIT License
